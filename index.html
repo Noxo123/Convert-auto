@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Convert Auto — Convertisseur universel</title>
+  <meta name="description" content="Convertissez automatiquement vos fichiers, données, nombres et unités rapidement, comme dans Excel.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1020;color:#eef2ff}
+    .glass{background:rgba(17,24,39,.72);backdrop-filter:blur(18px);border:1px solid rgba(148,163,184,.15)}
+    .drop-active{border-color:#818cf8!important;background:rgba(99,102,241,.12)!important}
+    .grid-table{border-collapse:collapse;min-width:100%}.grid-table td,.grid-table th{border:1px solid #273244;padding:7px 9px;white-space:nowrap}.grid-table th{background:#151d2e;position:sticky;top:0;z-index:2}.grid-table td[contenteditable=true]{outline:none}.grid-table td[contenteditable=true]:focus{box-shadow:inset 0 0 0 2px #6366f1}
+    ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div><div class="text-indigo-400 font-bold tracking-wide">NOXO TOOLS</div><h1 class="text-4xl font-black mt-1">Convert Auto</h1><p class="text-slate-400 mt-2">Dépose un fichier. Convert Auto détecte, transforme et exporte.</p></div>
+      <div class="flex gap-2"><button id="clearBtn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700">Réinitialiser</button><button id="downloadBtn" class="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 font-semibold">Télécharger</button></div>
+    </header>
+
+    <section id="dropZone" class="glass rounded-3xl p-10 text-center border-2 border-dashed border-slate-700 transition cursor-pointer">
+      <input id="fileInput" type="file" class="hidden" multiple>
+      <div class="text-5xl mb-4">⇅</div><h2 class="text-2xl font-bold">Glisse tes fichiers ici</h2><p class="text-slate-400 mt-2">CSV · XLSX · XLS · JSON · XML · TXT · HTML · TSV</p>
+      <button id="chooseBtn" class="mt-6 px-6 py-3 rounded-xl bg-white text-slate-950 font-bold">Choisir un fichier</button>
+      <p id="status" class="text-sm text-slate-500 mt-4">Aucun fichier chargé</p>
+    </section>
+
+    <section class="grid lg:grid-cols-3 gap-4 mt-5">
+      <div class="glass rounded-2xl p-5"><label class="text-sm text-slate-400">Format détecté</label><div id="fromFormat" class="text-xl font-bold mt-1">—</div></div>
+      <div class="glass rounded-2xl p-5"><label class="text-sm text-slate-400">Convertir vers</label><select id="toFormat" class="w-full mt-2 bg-slate-900 rounded-xl p-3 border border-slate-700"><option value="csv">CSV</option><option value="xlsx">Excel (.xlsx)</option><option value="json">JSON</option><option value="xml">XML</option><option value="txt">TXT</option><option value="html">HTML</option></select></div>
+      <div class="glass rounded-2xl p-5"><label class="text-sm text-slate-400">Mode automatique</label><div class="flex items-center gap-3 mt-3"><input id="autoMode" type="checkbox" checked class="w-5 h-5 accent-indigo-500"><span>Détecter et préparer automatiquement</span></div></div>
+    </section>
+
+    <section class="glass rounded-2xl mt-5 overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b border-slate-800"><div><h2 class="font-bold">Aperçu type Excel</h2><p class="text-xs text-slate-500">Les cellules sont modifiables avant export.</p></div><button id="addRow" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700">+ Ligne</button></div>
+      <div id="tableWrap" class="overflow-auto max-h-[520px]"><div class="p-10 text-center text-slate-500">Charge un fichier pour afficher les données.</div></div>
+    </section>
+
+    <section class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+      <button data-convert="csv" class="convertBtn glass p-5 rounded-2xl text-left hover:border-indigo-400 transition"><b>CSV</b><span class="block text-sm text-slate-400 mt-1">Tableur universel</span></button>
+      <button data-convert="xlsx" class="convertBtn glass p-5 rounded-2xl text-left hover:border-indigo-400 transition"><b>Excel</b><span class="block text-sm text-slate-400 mt-1">Classeur .xlsx</span></button>
+      <button data-convert="json" class="convertBtn glass p-5 rounded-2xl text-left hover:border-indigo-400 transition"><b>JSON</b><span class="block text-sm text-slate-400 mt-1">API / développeurs</span></button>
+      <button data-convert="xml" class="convertBtn glass p-5 rounded-2xl text-left hover:border-indigo-400 transition"><b>XML</b><span class="block text-sm text-slate-400 mt-1">Données structurées</span></button>
+    </section>
+
+    <section class="glass rounded-2xl p-5 mt-5">
+      <h2 class="font-bold">Conversions rapides</h2><div class="grid md:grid-cols-3 gap-3 mt-4">
+        <input id="quickValue" class="bg-slate-900 border border-slate-700 rounded-xl p-3" placeholder="Ex. 10 km, 25 °C, 100 €">
+        <select id="quickType" class="bg-slate-900 border border-slate-700 rounded-xl p-3"><option value="length">Longueur</option><option value="weight">Poids</option><option value="temperature">Température</option><option value="data">Données</option><option value="currency">Devise (taux indicatif)</option></select>
+        <div id="quickResult" class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-indigo-300">Résultat automatique</div>
+      </div>
+    </section>
+
+    <footer class="text-center text-slate-600 text-sm py-8">Convert Auto · traitement des fichiers localement dans le navigateur · Noxo123</footer>
+  </div>
+<script>
+let rows=[], headers=[], sourceName='conversion';
+const $=id=>document.getElementById(id);
+const ext=name=>(name.split('.').pop()||'').toLowerCase();
+function detect(name){const e=ext(name);return ({xlsx:'xlsx',xls:'xls',csv:'csv',tsv:'tsv',json:'json',xml:'xml',txt:'txt',html:'html',htm:'html'})[e]||e.toUpperCase()||'INCONNU'}
+function setStatus(t){$('status').textContent=t}
+function render(){
+ if(!rows.length){$('tableWrap').innerHTML='<div class="p-10 text-center text-slate-500">Aucune donnée.</div>';return}
+ const cols=Math.max(headers.length,...rows.map(r=>r.length),1);while(headers.length<cols)headers.push('Colonne '+(headers.length+1));
+ let h='<table class="grid-table"><thead><tr><th>#</th>'+headers.map((x,i)=>`<th contenteditable="true" data-h="${i}">${esc(x||('Colonne '+(i+1)))}</th>`).join('')+'</tr></thead><tbody>';
+ rows.forEach((r,ri)=>{h+=`<tr><th>${ri+1}</th>`;for(let ci=0;ci<cols;ci++)h+=`<td contenteditable="true" data-r="${ri}" data-c="${ci}">${esc(r[ci]??'')}</td>`;h+='</tr>'});h+='</tbody></table>';$('tableWrap').innerHTML=h;
+ document.querySelectorAll('[data-h]').forEach(x=>x.oninput=()=>headers[+x.dataset.h]=x.textContent);
+ document.querySelectorAll('[data-r]').forEach(x=>x.oninput=()=>{rows[+x.dataset.r][+x.dataset.c]=x.textContent});
+}
+function esc(v){return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
+function fromSheet(wb){const ws=wb.Sheets[wb.SheetNames[0]];const a=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});headers=(a.shift()||[]).map(String);rows=a.map(r=>r.map(v=>v instanceof Date?v.toISOString():v));render()}
+async function load(file){sourceName=file.name.replace(/\.[^.]+$/,'');const type=detect(file.name);$('fromFormat').textContent=type;setStatus(`Chargement de ${file.name}…`);
+ try{if(['xlsx','xls'].includes(type)){fromSheet(XLSX.read(await file.arrayBuffer(),{type:'array'}));}
+ else {const text=await file.text();if(type==='json'){const d=JSON.parse(text);if(Array.isArray(d)){headers=Object.keys(d[0]||{});rows=d.map(o=>headers.map(k=>o[k]??''));}else{headers=['clé','valeur'];rows=Object.entries(d).map(x=>x)}}else if(type==='xml'){const doc=new DOMParser().parseFromString(text,'application/xml');const els=[...doc.documentElement.children];headers=['élément','valeur'];rows=els.map(e=>[e.tagName,e.textContent]);}else{const sep=type==='tsv'?'\t':(text.includes(';')&&!text.includes(',')?';':',');const lines=text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(x=>x.trim()!=='');rows=lines.map(l=>parseCSVLine(l,sep));headers=rows.shift()||[];}}
+ setStatus(`${rows.length} ligne(s) chargée(s)`);render();}catch(e){setStatus('Erreur : '+e.message);alert('Impossible de lire ce fichier : '+e.message)}}
+function parseCSVLine(line,sep){let out=[],cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'&&line[i+1]==='"'){cur+='"';i++;continue}if(c==='"'){q=!q;continue}if(c===sep&&!q){out.push(cur);cur='';}else cur+=c}out.push(cur);return out}
+function csv(){return [headers,...rows].map(r=>r.map(v=>{v=String(v??'');return /[",;\n]/.test(v)?'"'+v.replaceAll('"','""')+'"':v}).join(',')).join('\n')}
+function json(){return JSON.stringify(rows.map(r=>Object.fromEntries(headers.map((h,i)=>[h||`col${i+1}`,r[i]??'']))),null,2)}
+function xml(){return '<?xml version="1.0" encoding="UTF-8"?>\n<rows>\n'+rows.map(r=>'  <row>'+headers.map((h,i)=>`<${safeTag(h||`col${i+1}`)}>${xmlEsc(r[i]??'')}</${safeTag(h||`col${i+1}`)}>`).join('')+'</row>').join('\n')+'\n</rows>'}
+function safeTag(s){return String(s).replace(/[^a-zA-Z0-9_-]/g,'_').replace(/^[^a-zA-Z_]+/,'_')||'col'}function xmlEsc(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
+function html(){return '<!doctype html><html><head><meta charset="utf-8"><title>Convert Auto</title></head><body><table border="1"><thead><tr>'+headers.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+headers.map((_,i)=>'<td>'+esc(r[i]??'')+'</td>').join('')+'</tr>').join('')+'</tbody></table></body></html>'}
+function download(format){if(!rows.length)return alert('Charge d’abord un fichier.');let blob,name; if(format==='xlsx'){const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Convert Auto');XLSX.writeFile(wb,sourceName+'.xlsx');return}else{const data={csv, json, xml, txt:()=>rows.map(r=>r.join('\t')).join('\n'),html}[format]?.();blob=new Blob([data],{type:format==='json'?'application/json':'text/plain;charset=utf-8'});name=sourceName+'.'+format; }const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);setStatus(`Export ${format.toUpperCase()} terminé`)}
+$('chooseBtn').onclick=()=>$('fileInput').click();$('dropZone').onclick=e=>{if(!e.target.closest('button'))$('fileInput').click()};$('fileInput').onchange=e=>[...e.target.files].forEach(load);
+$('dropZone').ondragover=e=>{e.preventDefault();$('dropZone').classList.add('drop-active')};$('dropZone').ondragleave=()=>$('dropZone').classList.remove('drop-active');$('dropZone').ondrop=e=>{e.preventDefault();$('dropZone').classList.remove('drop-active');[...e.dataTransfer.files].forEach(load)};
+$('downloadBtn').onclick=()=>download($('toFormat').value);document.querySelectorAll('.convertBtn').forEach(b=>b.onclick=()=>{$('toFormat').value=b.dataset.convert;download(b.dataset.convert)});$('addRow').onclick=()=>{if(!headers.length)headers=['Colonne 1'];rows.push(Array(headers.length).fill(''));render()};$('clearBtn').onclick=()=>{rows=[];headers=[];$('fromFormat').textContent='—';$('tableWrap').innerHTML='<div class="p-10 text-center text-slate-500">Charge un fichier pour afficher les données.</div>';setStatus('Aucun fichier chargé')};
+$('quickValue').oninput=quick;$('quickType').onchange=quick;function quick(){const s=$('quickValue').value.trim(),type=$('quickType').value;if(!s){$('quickResult').textContent='Résultat automatique';return}const m=s.match(/^(-?[\d.,]+)\s*([a-zA-Z°]+)$/);if(!m){$('quickResult').textContent='Format : 10 km, 500 g, 25 °C';return}let n=parseFloat(m[1].replace(',','.')),u=m[2].toLowerCase(),out='';const sets={length:{m:1,km:1000,cm:.01,mm:.001,mi:1609.344,ft:.3048},weight:{g:1,kg:1000,mg:.001,lb:453.59237,oz:28.3495},data:{b:1,kb:1024,mb:1048576,gb:1073741824,tb:1099511627776}};if(type==='temperature'){out=u.includes('c')?`${n} °C = ${(n*9/5+32).toFixed(2)} °F = ${(n+273.15).toFixed(2)} K`:u.includes('f')?`${n} °F = ${((n-32)*5/9).toFixed(2)} °C`:u.includes('k')?`${n} K = ${(n-273.15).toFixed(2)} °C`:'Unité inconnue'}else if(sets[type]?.[u]){const base=n*sets[type][u];out=Object.entries(sets[type]).map(([k,f])=>`${k}: ${+(base/f).toPrecision(8)}`).join(' · ')}else out='Unité inconnue';$('quickResult').textContent=out}
+</script>
+</body></html>
